@@ -2,120 +2,150 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Flappy Bird - Bindz</title>
+<title>Flappy Bird - Bindz Edition</title>
 <style>
-    body { 
-        margin:0; 
-        background:#70c5ce; 
-        display:flex; 
-        justify-content:center; 
-        align-items:center; 
-        height:100vh; 
+    body {
+        margin: 0;
+        background: #70c5ce;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
     }
-    canvas { 
-        background:#70c5ce; 
-        display:block;
+    canvas {
+        background: #70c5ce;
+        border: 2px solid #333;
+    }
+    /* Menu hack */
+    #hackMenu {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #ff6a00, #ee0979);
+        color: white;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        font-family: Arial, sans-serif;
+        z-index: 9999;
+        min-width: 180px;
+    }
+    #hackMenu h3 {
+        margin-top: 0;
+        text-align: center;
+    }
+    #smallButton {
+        display: none;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #ff6a00;
+        border: none;
+        color: white;
+        font-size: 18px;
+        cursor: move;
+        z-index: 9999;
     }
 </style>
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
+
+<canvas id="gameCanvas" width="480" height="640"></canvas>
+
+<!-- Menu Hack -->
+<div id="hackMenu">
+    <h3>Bindz Hack</h3>
+    <label>Tốc độ bay:
+        <select id="speedSelect">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="3">3x</option>
+        </select>
+    </label>
+    <br><br>
+    <button id="toggleMenu">Tắt menu</button>
+</div>
+
+<button id="smallButton">≡</button>
+
 <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+let canvas = document.getElementById("gameCanvas");
+let ctx = canvas.getContext("2d");
 
-    // Tự động điều chỉnh canvas theo kích thước cửa sổ
-    function resizeCanvas(){
-        canvas.width = window.innerWidth * 0.8;  // 80% chiều rộng
-        canvas.height = window.innerHeight * 0.9; // 90% chiều cao
+// Game variables
+let birdY = 200;
+let birdVelocity = 0;
+let gravity = 0.5;
+let jump = -8;
+let speedMultiplier = 1;
+
+// Load bird
+let bird = new Image();
+bird.src = "https://i.imgur.com/QZKJ8bR.png";
+
+// Input
+document.addEventListener("keydown", function(e) {
+    if (e.code === "Space") birdVelocity = jump;
+});
+canvas.addEventListener("mousedown", function() {
+    birdVelocity = jump;
+});
+
+// Game loop
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Bird movement
+    birdY += birdVelocity * speedMultiplier;
+    birdVelocity += gravity;
+
+    // Draw bird
+    ctx.drawImage(bird, 50, birdY, 40, 40);
+
+    requestAnimationFrame(loop);
+}
+loop();
+
+// Hack menu events
+document.getElementById("speedSelect").addEventListener("change", function() {
+    speedMultiplier = parseInt(this.value);
+});
+
+// Toggle menu
+document.getElementById("toggleMenu").addEventListener("click", function() {
+    document.getElementById("hackMenu").style.display = "none";
+    let btn = document.getElementById("smallButton");
+    btn.style.display = "block";
+});
+
+// Draggable small button
+let smallBtn = document.getElementById("smallButton");
+let offsetX, offsetY, dragging = false;
+smallBtn.addEventListener("mousedown", function(e) {
+    dragging = true;
+    offsetX = e.clientX - smallBtn.offsetLeft;
+    offsetY = e.clientY - smallBtn.offsetTop;
+});
+document.addEventListener("mousemove", function(e) {
+    if (dragging) {
+        smallBtn.style.left = (e.clientX - offsetX) + "px";
+        smallBtn.style.top = (e.clientY - offsetY) + "px";
     }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+});
+document.addEventListener("mouseup", function() {
+    dragging = false;
+});
 
-    let bird = { x:50, y:150, w:30, h:30, gravity:0.6, lift:-10, velocity:0 };
-    let pipes = [];
-    let score = 0;
-    let frame = 0;
-    let speed = 2;
-
-    function drawBird() {
-        ctx.fillStyle = "yellow";
-        ctx.fillRect(bird.x, bird.y, bird.w, bird.h);
-    }
-
-    function drawPipes() {
-        ctx.fillStyle = "green";
-        for (let p of pipes) {
-            ctx.fillRect(p.x, 0, 60, p.top);
-            ctx.fillRect(p.x, canvas.height - p.bottom, 60, p.bottom);
-        }
-    }
-
-    function drawScore() {
-        ctx.fillStyle = "white";
-        ctx.font = "24px Arial";
-        ctx.fillText("Score: " + score, 10, 30);
-    }
-
-    function updateBird() {
-        bird.velocity rd.y += bird.velocity;
-
-        if (bird.y + bird.h > canvas.height) resetGame();
-        if (bird.y < 0) bird.y = 0;
-    }
-
-    function updatePipes() {
-        if (frame % 90 === 0) {
-            let gap = 150;
-            let top = Math.random() * (canvas.height - gap - 60) + 30;
-            let bottom = canvas.height - top - gap;
-            pipes.push({ x: canvas.width, top: top, bottom: bottom });
-        }
-
-        for (let i = pipes.length - 1; i >= 0; i--) {
-            pipes[i].x -= speed;
-            if (pipes[i].x + 60 < 0) {
-                pipes.splice(i, 1);
-                score++;
-            }
-            if (
-                bird.x < pipes[i].x + 60 &&
-                bird.x + bird.w > pipes[i].x &&
-                (bird.y < pipes[i].top || bird.y + bird.h > canvas.height - pipes[i].bottom)
-            ) {
-                resetGame();
-            }
-        }
-    }
-
-    function resetGame() {
-        bird.y = 150;
-        bird.velocity = 0;
-        pipes = [];
-        score = 0;
-        frame = 0;
-    }
-
-    function gameLoop() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawBird();
-        drawPipes();
-        drawScore();
-        updateBird();
-        updatePipes();
-        frame++;
-        requestAnimationFrame(gameLoop);
-    }
-
-    // Chỉ nhảy khi click hoặc phím Space
-    document.addEventListener("keydown", (e) => {
-        if(e.code === "Space") bird.velocity = bird.lift;
-    });
-    canvas.addEventListener("click", () => {
-        bird.velocity = bird.lift;
-    });
-
-    gameLoop();
+// Click small button to reopen menu
+smallBtn.addEventListener("click", function() {
+    document.getElementById("hackMenu").style.display = "block";
+    smallBtn.style.display = "none";
+});
 </script>
+
 </body>
 </html>
