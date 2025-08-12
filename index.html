@@ -1,54 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Flappy Bird - Bindz Edition</title>
+<title>Flappy Bird - Bindz Hack Menu</title>
 <style>
     body {
         margin: 0;
         background: #70c5ce;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
         overflow: hidden;
+        font-family: Arial, sans-serif;
     }
     canvas {
+        display: block;
+        margin: auto;
         background: #70c5ce;
-        border: 2px solid #333;
     }
-    /* Menu hack */
+    /* Hack Menu */
     #hackMenu {
         position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #ff6a00, #ee0979);
+        top: 50px;
+        left: 50px;
+        background: rgba(0,0,0,0.8);
         color: white;
-        padding: 15px;
-        border-radius: 12px;
-        box-shadow: 0 0 15px rgba(0,0,0,0.5);
-        font-family: Arial, sans-serif;
-        z-index: 9999;
-        min-width: 180px;
-    }
-    #hackMenu h3 {
-        margin-top: 0;
-        text-align: center;
-    }
-    #smallButton {
-        display: none;
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: #ff6a00;
-        border: none;
-        color: white;
+        padding: 20px;
+        border-radius: 15px;
         font-size: 18px;
-        cursor: move;
-        z-index: 9999;
+        display: none;
+        width: 250px;
+        z-index: 1000;
+    }
+    #hackMenu h2 {
+        margin-top: 0;
+        font-size: 22px;
+        text-align: center;
+        color: #ffcc00;
+        font-family: 'Comic Sans MS', cursive;
+    }
+    .hackButton {
+        background: #ff5733;
+        border: none;
+        padding: 10px;
+        margin: 5px 0;
+        color: white;
+        width: 100%;
+        cursor: pointer;
+        border-radius: 8px;
+        font-size: 16px;
+    }
+    .hackButton:hover {
+        background: #ff7849;
+    }
+    /* Meme Button */
+    #toggleBtn {
+        position: fixed;
+        top: 100px;
+        left: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-image: url("https://i.imgur.com/0y8Ftya.png");
+        background-size: cover;
+        border: 2px solid white;
+        cursor: pointer;
+        z-index: 1001;
     }
 </style>
 </head>
@@ -56,96 +70,110 @@
 
 <canvas id="gameCanvas" width="480" height="640"></canvas>
 
-<!-- Menu Hack -->
+<!-- Hack Menu -->
 <div id="hackMenu">
-    <h3>Bindz Hack</h3>
-    <label>Tốc độ bay:
-        <select id="speedSelect">
-            <option value="1">1x</option>
-            <option value="2">2x</option>
-            <option value="3">3x</option>
-        </select>
-    </label>
-    <br><br>
-    <button id="toggleMenu">Tắt menu</button>
+    <h2>🐦 Bindz Hack Menu 🐦</h2>
+    <button class="hackButton" onclick="setSpeed(1)">Bay Nhanh x1</button>
+    <button class="hackButton" onclick="setSpeed(2)">Bay Nhanh x2</button>
+    <button class="hackButton" onclick="setSpeed(3)">Bay Nhanh x3</button>
+    <button class="hackButton" onclick="toggleMenu()">Tắt Menu</button>
 </div>
 
-<button id="smallButton">≡</button>
+<!-- Meme Button -->
+<div id="toggleBtn" onmousedown="startDrag(event)"></div>
 
 <script>
-let canvas = document.getElementById("gameCanvas");
-let ctx = canvas.getContext("2d");
+    let gameSpeed = 2;
+    let canvas = document.getElementById("gameCanvas");
+    let ctx = canvas.getContext("2d");
 
-// Game variables
-let birdY = 200;
-let birdVelocity = 0;
-let gravity = 0.5;
-let jump = -8;
-let speedMultiplier = 1;
+    let birdY = canvas.height / 2;
+    let birdVel = 0;
+    let gravity = 0.6;
+    let jump = -10;
 
-// Load bird
-let bird = new Image();
-bird.src = "https://i.imgur.com/QZKJ8bR.png";
+    let pipes = [];
+    let frame = 0;
 
-// Input
-document.addEventListener("keydown", function(e) {
-    if (e.code === "Space") birdVelocity = jump;
-});
-canvas.addEventListener("mousedown", function() {
-    birdVelocity = jump;
-});
-
-// Game loop
-function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Bird movement
-    birdY += birdVelocity * speedMultiplier;
-    birdVelocity += gravity;
-
-    // Draw bird
-    ctx.drawImage(bird, 50, birdY, 40, 40);
-
-    requestAnimationFrame(loop);
-}
-loop();
-
-// Hack menu events
-document.getElementById("speedSelect").addEventListener("change", function() {
-    speedMultiplier = parseInt(this.value);
-});
-
-// Toggle menu
-document.getElementById("toggleMenu").addEventListener("click", function() {
-    document.getElementById("hackMenu").style.display = "none";
-    let btn = document.getElementById("smallButton");
-    btn.style.display = "block";
-});
-
-// Draggable small button
-let smallBtn = document.getElementById("smallButton");
-let offsetX, offsetY, dragging = false;
-smallBtn.addEventListener("mousedown", function(e) {
-    dragging = true;
-    offsetX = e.clientX - smallBtn.offsetLeft;
-    offsetY = e.clientY - smallBtn.offsetTop;
-});
-document.addEventListener("mousemove", function(e) {
-    if (dragging) {
-        smallBtn.style.left = (e.clientX - offsetX) + "px";
-        smallBtn.style.top = (e.clientY - offsetY) + "px";
+    function setSpeed(mult) {
+        gameSpeed = mult * 2;
     }
-});
-document.addEventListener("mouseup", function() {
-    dragging = false;
-});
 
-// Click small button to reopen menu
-smallBtn.addEventListener("click", function() {
-    document.getElementById("hackMenu").style.display = "block";
-    smallBtn.style.display = "none";
-});
+    function toggleMenu() {
+        let menu = document.getElementById("hackMenu");
+        let btn = document.getElementById("toggleBtn");
+        if (menu.style.display === "none") {
+            menu.style.display = "block";
+            btn.style.display = "none";
+        } else {
+            menu.style.display = "none";
+            btn.style.display = "block";
+        }
+    }
+
+    function startDrag(e) {
+        e.preventDefault();
+        let btn = document.getElementById("toggleBtn");
+        let shiftX = e.clientX - btn.getBoundingClientRect().left;
+        let shiftY = e.clientY - btn.getBoundingClientRect().top;
+
+        function moveAt(pageX, pageY) {
+            btn.style.left = pageX - shiftX + 'px';
+            btn.style.top = pageY - shiftY + 'px';
+        }
+
+        function onMouseMove(e) {
+            moveAt(e.pageX, e.pageY);
+        }
+
+        document.addEventListener('mousemove', onMouseMove);
+
+        btn.onmouseup = function() {
+            document.removeEventListener('mousemove', onMouseMove);
+            btn.onmouseup = null;
+        };
+    }
+
+    document.getElementById("toggleBtn").onclick = toggleMenu;
+
+    // Game loop
+    function draw() {
+        ctx.fillStyle = "#70c5ce";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Bird
+        ctx.fillStyle = "yellow";
+        ctx.beginPath();
+        ctx.arc(80, birdY, 15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pipes
+        if (frame % 100 === 0) {
+            let topHeight = Math.random() * 200 + 50;
+            pipes.push({x: canvas.width, top: topHeight, bottom: topHeight + 150});
+        }
+        for (let i = 0; i < pipes.length; i++) {
+            ctx.fillStyle = "green";
+            ctx.fillRect(pipes[i].x, 0, 50, pipes[i].top);
+            ctx.fillRect(pipes[i].x, pipes[i].bottom, 50, canvas.height - pipes[i].bottom);
+            pipes[i].x -= gameSpeed;
+        }
+
+        // Gravity
+        birdVel += gravity;
+        birdY += birdVel;
+
+        frame++;
+        requestAnimationFrame(draw);
+    }
+
+    window.addEventListener("keydown", function(e) {
+        if (e.code === "Space") {
+            birdVel = jump;
+        }
+    });
+
+    draw();
 </script>
-
 </body>
 </html>
