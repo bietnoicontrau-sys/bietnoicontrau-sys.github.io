@@ -3,12 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Flappy Bird - Bindz (Menu viền cầu vồng)</title>
+<title>Flappy Bird - Bindz (Fixes)</title>
 <style>
   :root{
     --bg:#70c5ce;
     --menu-w:360px;
-    --menu-h: auto;
   }
   html,body{height:100%;margin:0;padding:0;background:var(--bg);font-family:Inter,Arial,sans-serif;overflow:hidden;}
   canvas{display:block;width:100vw;height:100vh;background:linear-gradient(#70c5ce,#5fb3c1);}
@@ -42,26 +41,26 @@
     touch-action:none;
     cursor: grab;
     background:#fff;
+    display:block;
   }
   #toggleBtn img{width:100%;height:100%;object-fit:cover;display:block;}
 
-/* Menu container with animated rainbow border */
+/* Menu wrapper (hidden by default) */
   .menu-wrap {
     position: fixed;
     right: 24px;
     top: 24px;
     width: var(--menu-w);
     z-index: 1006;
-    pointer-events: none; /* inner box will enable pointer-events */
+    display: none; /* HIDE when closed - fixes rainbow visible outside menu */
   }
 
-  /* animated rainbow ring using pseudo-element */
+  /* animated rainbow ring using pseudo-element (only shows when .menu-wrap is displayed) */
   .menu-frame {
     position: relative;
     border-radius: 18px;
     padding: 4px; /* space for the animated border */
     background: transparent;
-    pointer-events: auto;
   }
 
   .menu-frame::before{
@@ -80,7 +79,6 @@
     filter: blur(6px) saturate(1.1);
     animation: spin 3.8s linear infinite;
   }
-
   @keyframes spin{ from{transform: rotate(0deg);} to{transform: rotate(360deg);} }
 
   /* actual menu content */
@@ -91,42 +89,28 @@
     padding:16px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.5);
     pointer-events: auto;
-    display:none;
   }
 
-  #hackMenu h2{
-    margin:0 0 8px 0;
-    font-size:20px;
-    text-align:center;
-    font-family: "Comic Sans MS", "Segoe UI", Arial;
-    color:#ffdd57;
-  }
+  #hackMenu h2{ margin:0 0 8px 0; font-size:20px; text-align:center; color:#ffdd57; font-family: "Comic Sans MS", "Segoe UI", Arial; }
   .byline{ text-align:center; font-size:12px; opacity:0.9; margin-bottom:10px; }
 
   .menu-row{ display:flex; gap:8px; margin-bottom:12px; }
   .btn{
-    flex:1;
-    padding:10px;
-    border-radius:10px;
-    border:0;
-    cursor:pointer;
-    font-weight:700;
-    font-size:14px;
-    color:#111;
+    flex:1; padding:10px; border-radius:10px; border:0; cursor:pointer;
+    font-weight:700; font-size:14px; color:#111;
     background:linear-gradient(180deg,#fff6ea,#ffdba5);
     box-shadow: 0 6px 12px rgba(0,0,0,0.25);
   }
   .btn.active{ outline:2px solid rgba(255,255,255,0.12); transform: translateY(-3px); }
 
   .btn-close{
-    width:100%;
-    padding:10px;border-radius:10px;border:0;cursor:pointer;
+    width:100%; padding:10px;border-radius:10px;border:0;cursor:pointer;
     background:#101010;color:#fff;font-weight:800;margin-top:6px;
   }
 
   .note{ font-size:13px; text-align:center; opacity:0.9; margin-top:8px; }
 
-/* Game Over overlay */
+  /* Game Over overlay (blocks click on canvas naturally) */
   #gameOverOverlay{
     position: fixed; inset:0; display:none; z-index:1004;
     background: rgba(0,0,0,0.55);
@@ -151,7 +135,7 @@
   <img id="memeImg" src="https://i.imgur.com/0y8Ftya.png" alt="mèo cười">
 </div>
 
-<!-- menu with rainbow border frame -->
+<!-- menu with rainbow border frame (hidden by default) -->
 <div class="menu-wrap" aria-hidden="true">
   <div class="menu-frame">
     <div id="hackMenu" role="dialog" aria-modal="false">
@@ -184,7 +168,6 @@ function fitCanvas(){
   bird.r = Math.round(Math.min(canvas.width, canvas.height) * 0.035);
 }
 window.addEventListener('resize', fitCanvas);
-fitCanvas();
 
 /* ---------- Game state ---------- */
 let score = 0;
@@ -194,9 +177,9 @@ let gravity = 0.6;
 let jumpPower = -10;
 
 let bird = {
-  x: Math.round(canvas.width * 0.18),
-  y: canvas.height / 2,
-  r: Math.round(Math.min(canvas.width, canvas.height) * 0.035),
+  x: Math.round(window.innerWidth * 0.18),
+  y: window.innerHeight / 2,
+  r: Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.035),
   vy: 0
 };
 
@@ -204,6 +187,9 @@ let pipes = [];
 let spawnInterval = 110;
 let frame = 0;
 let gameOver = false;
+
+/* make sure canvas size updated now */
+fitCanvas();
 
 /* ---------- Gameplay functions ---------- */
 function spawnPipe(){
@@ -227,12 +213,12 @@ function resetGame(){
   bird.vy = 0;
   gameOver = false;
   document.getElementById('gameOverOverlay').style.display = 'none';
-  // keep speed multiplier as selected
+  // keep selected speedMultiplier
 }
 
+/* update */
 function update(){
-  // if gameOver true => DO NOT update world (stop pipes, bird)
-  if (gameOver) return;
+  if (gameOver) return; // STOP world when dead
 
   bird.vy += gravity;
   bird.y += bird.vy;
@@ -254,14 +240,12 @@ function update(){
     let p = pipes[i];
     p.x -= curSpeed;
 
-    // score when passed
     if (!p.passed && p.x + p.w < bird.x - bird.r) {
       p.passed = true;
       score++;
       document.getElementById('hudScore').textContent = 'Score: ' + score;
     }
 
-    // collision check
     if (rectCircleColliding(p.x, 0, p.w, p.top, bird.x, bird.y, bird.r) ||
         rectCircleColliding(p.x, p.bottom, p.w, canvas.height - p.bottom, bird.x, bird.y, bird.r)) {
       handleDeath();
@@ -273,8 +257,8 @@ function update(){
   frame++;
 }
 
+/* draw */
 function draw(){
-  // clear
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   // pipes
@@ -297,8 +281,6 @@ function draw(){
   ctx.arc(bird.r*0.3, -bird.r*0.15, Math.max(2, bird.r*0.18), 0, Math.PI*2);
   ctx.fill();
   ctx.restore();
-
-  // if gameOver -> overlay visible (handled separately)
 }
 
 /* main loop */
@@ -324,7 +306,6 @@ function handleDeath(){
   if (!gameOver) {
     gameOver = true;
     document.getElementById('gameOverOverlay').style.display = 'flex';
-    // leave pipes and bird as-is (world frozen)
   }
 }
 
@@ -340,66 +321,73 @@ canvas.addEventListener('pointerdown', function(e){
   bird.vy = jumpPower;
 });
 
-/* ---------- Menu + controls ---------- */
+/* ---------- Menu + controls (fixed) ---------- */
 const toggleBtn = document.getElementById('toggleBtn');
-const hackMenu = document.getElementById('hackMenu');
 const menuWrap = document.querySelector('.menu-wrap');
-const menuFrame = document.querySelector('.menu-frame');
+const hackMenu = document.getElementById('hackMenu');
+const closeMenuBtn = document.getElementById('closeMenu');
 const gameOverOverlay = document.getElementById('gameOverOverlay');
 
-// toggle menu visibility
+/* show / hide menu - also toggle wrapper display so rainbow border only visible when open */
 function openMenu(){
+  menuWrap.style.display = 'block';
   hackMenu.style.display = 'block';
   menuWrap.setAttribute('aria-hidden','false');
   toggleBtn.style.display = 'none';
 }
 function closeMenu(){
   hackMenu.style.display = 'none';
+  menuWrap.style.display = 'none';
   menuWrap.setAttribute('aria-hidden','true');
   toggleBtn.style.display = 'block';
 }
-toggleBtn.addEventListener('click', (e)=>{ e.stopPropagation(); openMenu(); });
-document.getElementById('closeMenu').addEventListener('click', closeMenu);
+closeMenuBtn.addEventListener('click', closeMenu);
 
-// speed buttons
-document.getElementById('speed1').addEventListener('click', function(){
-  setSpeed(1, this);
-});
-document.getElementById('speed2').addEventListener('click', function(){
-  setSpeed(2, this);
-});
-document.getElementById('speed3').addEventListener('click', function(){
-  setSpeed(3, this);
-});
+/* speed buttons */
+document.getElementById('speed1').addEventListener('click', function(){ setSpeed(1,this); });
+document.getElementById('speed2').addEventListener('click', function(){ setSpeed(2,this); });
+document.getElementById('speed3').addEventListener('click', function(){ setSpeed(3,this); });
 
 function setSpeed(n, btnEl){
   speedMultiplier = n;
-  // active visual
   document.querySelectorAll('.menu-row .btn').forEach(b=>{ b.classList.remove('active'); });
   if (btnEl) btnEl.classList.add('active');
 }
 
-/* draggable meme button */
-let dragging = false, dragOffset = {x:0,y:0};
+/* draggable-toggle behavior with click-to-open when not dragged */
+let isPointerDownBtn = false;
+let btnMoved = false;
+let btnOffset = {x:0,y:0};
+
 toggleBtn.addEventListener('pointerdown', function(e){
-  dragging = true;
+  isPointerDownBtn = true;
+  btnMoved = false;
   toggleBtn.setPointerCapture(e.pointerId);
-  dragOffset.x = e.clientX - toggleBtn.offsetLeft;
-  dragOffset.y = e.clientY - toggleBtn.offsetTop;
+  btnOffset.x = e.clientX - toggleBtn.offsetLeft;
+  btnOffset.y = e.clientY - toggleBtn.offsetTop;
   toggleBtn.style.cursor = 'grabbing';
 });
+
 window.addEventListener('pointermove', function(e){
-  if (!dragging) return;
-  let nx = e.clientX - dragOffset.x;
-  let ny = e.clientY - dragOffset.y;
+  if (!isPointerDownBtn) return;
+  // move and detect if actually dragged
+  let nx = e.clientX - btnOffset.x;
+  let ny = e.clientY - btnOffset.y;
+  if (Math.abs(nx - toggleBtn.offsetLeft) > 4 || Math.abs(ny - toggleBtn.offsetTop) > 4) btnMoved = true;
   nx = clamp(nx, 6, window.innerWidth - toggleBtn.offsetWidth - 6);
   ny = clamp(ny, 6, window.innerHeight - toggleBtn.offsetHeight - 6);
   toggleBtn.style.left = nx + 'px';
   toggleBtn.style.top = ny + 'px';
 });
-window.addEventListener('pointerup', function(e){
-  dragging = false;
+
+toggleBtn.addEventListener('pointerup', function(e){
+  toggleBtn.releasePointerCapture && toggleBtn.releasePointerCapture(e.pointerId);
   toggleBtn.style.cursor = 'grab';
+  isPointerDownBtn = false;
+  if (!btnMoved) {
+    // treat as tap/click -> open menu
+    openMenu();
+  }
 });
 
 /* meme fallback */
@@ -413,6 +401,11 @@ memeImg.onerror = function(){
   btn.style.alignItems = 'center';
   btn.style.justifyContent = 'center';
 };
+
+/* When overlay shown (Game Over), allow click on overlay to reset as well (fix 'đơ') */
+gameOverOverlay.addEventListener('click', function(){
+  resetGame();
+});
 
 /* Prevent double-tap zoom */
 let lastTouch = 0;
