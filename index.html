@@ -1,420 +1,330 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Flappy Bird - Bindz (Fixes)</title>
+<meta charset="UTF-8">
+<title>Flappy Bird + Bindz Hack Menu</title>
 <style>
-  :root{
-    --bg:#70c5ce;
-    --menu-w:360px;
-  }
-  html,body{height:100%;margin:0;padding:0;background:var(--bg);font-family:Inter,Arial,sans-serif;overflow:hidden;}
-  canvas{display:block;width:100vw;height:100vh;background:linear-gradient(#70c5ce,#5fb3c1);}
+html, body {
+  margin: 0; padding: 0; overflow: hidden;
+  background: #70c5ce; font-family: sans-serif;
+}
+canvas {
+  display: block;
+  margin: 0 auto;
+  background: #70c5ce;
+}
+:root {
+  --menu-w: 220px;
+}
 
-/* HUD */
-  #hudScore{
-    position: fixed;
-    left: 16px;
-    bottom: 18px;
-    z-index: 1000;
-    color: #fff;
-    font-weight:700;
-    font-size:18px;
-    background: rgba(0,0,0,0.2);
-    padding:8px 12px;border-radius:10px;
-    backdrop-filter: blur(4px);
-  }
+/* Floating cat button */
+#toggleBtn {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: url('https://i.ibb.co/m0nMmb2/cat.png') center/cover;
+  cursor: pointer;
+  z-index: 1007;
+}
 
-/* Toggle (meme cat) */
-  #toggleBtn{
-    position: fixed;
-    left: 18px;
-    top: 18px;
-    width:64px;
-    height:64px;
-    border-radius:50%;
-    overflow:hidden;
-    border:3px solid #fff;
-    box-shadow:0 8px 22px rgba(0,0,0,0.35);
-    z-index:1005;
-    touch-action:none;
-    cursor: grab;
-    background:#fff;
-    display:block;
-  }
-  #toggleBtn img{width:100%;height:100%;object-fit:cover;display:block;}
+/* Menu wrapper */
+.menu-wrap {
+  position: fixed;
+  right: 24px;
+  top: 24px;
+  width: var(--menu-w);
+  z-index: 1006;
+  display: none;
+}
 
-/* Menu wrapper (hidden by default) */
-  .menu-wrap {
-    position: fixed;
-    right: 24px;
-    top: 24px;
-    width: var(--menu-w);
-    z-index: 1006;
-    display: none; /* HIDE when closed - fixes rainbow visible outside menu */
-  }
+.menu-frame {
+  position: relative;
+  border-radius: 18px;
+  padding: 4px;
+  background: transparent;
+}
 
-  /* animated rainbow ring using pseudo-element (only shows when .menu-wrap is displayed) */
-  .menu-frame {
-    position: relative;
-    border-radius: 18px;
-    padding: 4px; /* space for the animated border */
-    background: transparent;
-  }
+.menu-frame::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 18px;
+  padding: 3px;
+  background: conic-gradient(
+    #ff004c,
+    #ff7a00,
+    #ffd300,
+    #2be7a1,
+    #00c2ff,
+    #7a5cff,
+    #ff004c
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  animation: spin 3s linear infinite;
+}
 
-  .menu-frame::before{
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 16px;
-    padding: 2px;
-    background: conic-gradient(from 0deg, #ff004c, #ff7a00, #ffd300, #2be7a1, #00c2ff, #7a5cff, #ff004c);
-    -webkit-mask: 
-      linear-gradient(#000,#000) content-box,
-      linear-gradient(#000,#000);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    z-index: -1;
-    filter: blur(6px) saturate(1.1);
-    animation: spin 3.8s linear infinite;
-  }
-  @keyframes spin{ from{transform: rotate(0deg);} to{transform: rotate(360deg);} }
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
-  /* actual menu content */
-  #hackMenu {
-    border-radius: 14px;
-    background: linear-gradient(180deg, rgba(10,10,10,0.95), rgba(20,20,20,0.95));
-    color:#fff;
-    padding:16px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-    pointer-events: auto;
-  }
+/* actual menu content */
+#hackMenu {
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(10,10,10,0.95), rgba(20,20,20,0.95));
+  color:#fff;
+  padding:16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+#hackMenu h3 { margin-top: 0; text-align: center; font-family: monospace; }
+label { display:block; margin:8px 0; }
 
-  #hackMenu h2{ margin:0 0 8px 0; font-size:20px; text-align:center; color:#ffdd57; font-family: "Comic Sans MS", "Segoe UI", Arial; }
-  .byline{ text-align:center; font-size:12px; opacity:0.9; margin-bottom:10px; }
-
-  .menu-row{ display:flex; gap:8px; margin-bottom:12px; }
-  .btn{
-    flex:1; padding:10px; border-radius:10px; border:0; cursor:pointer;
-    font-weight:700; font-size:14px; color:#111;
-    background:linear-gradient(180deg,#fff6ea,#ffdba5);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.25);
-  }
-  .btn.active{ outline:2px solid rgba(255,255,255,0.12); transform: translateY(-3px); }
-
-  .btn-close{
-    width:100%; padding:10px;border-radius:10px;border:0;cursor:pointer;
-    background:#101010;color:#fff;font-weight:800;margin-top:6px;
-  }
-
-  .note{ font-size:13px; text-align:center; opacity:0.9; margin-top:8px; }
-
-  /* Game Over overlay (blocks click on canvas naturally) */
-  #gameOverOverlay{
-    position: fixed; inset:0; display:none; z-index:1004;
-    background: rgba(0,0,0,0.55);
-    color: #fff; font-weight:800; display:flex; align-items:center; justify-content:center;
-    font-size:28px; text-align:center; padding:20px;
-  }
-
-  @media (max-width:420px){
-    :root{ --menu-w: calc(92vw); }
-    #toggleBtn{ left:12px; top:12px; width:56px; height:56px; }
-  }
 </style>
 </head>
 <body>
 
-<canvas id="gameCanvas"></canvas>
+<canvas id="gameCanvas" width="480" height="640"></canvas>
 
-<div id="hudScore">Score: 0</div>
+<div id="toggleBtn"></div>
 
-<!-- draggable meme -->
-<div id="toggleBtn" title="Mở Bindz Hack Menu">
-  <img id="memeImg" src="https://i.imgur.com/0y8Ftya.png" alt="mèo cười">
-</div>
-
-<!-- menu with rainbow border frame (hidden by default) -->
-<div class="menu-wrap" aria-hidden="true">
+<div class="menu-wrap" id="menuWrap">
   <div class="menu-frame">
-    <div id="hackMenu" role="dialog" aria-modal="false">
-      <h2>🐦 Bindz Hack Menu</h2>
-      <div class="byline">Bindz • Debug / Tweak</div>
-
-      <div class="menu-row">
-        <button class="btn" id="speed1" data-speed="1">Bay x1</button>
-        <button class="btn" id="speed2" data-speed="2">Bay x2</button>
-        <button class="btn" id="speed3" data-speed="3">Bay x3</button>
-      </div>
-
-      <button id="closeMenu" class="btn-close">Đóng Menu</button>
-      <div class="note">Space / Chạm để nhảy • Khi chết game sẽ dừng</div>
+    <div id="hackMenu">
+      <h3>Bindz Hack</h3>
+      <label>
+        Bay nhanh:
+        <select id="speedHack">
+          <option value="1">1x</option>
+          <option value="2">2x</option>
+          <option value="3">3x</option>
+        </select>
+      </label>
     </div>
   </div>
 </div>
 
-<div id="gameOverOverlay">Game Over<br>Nhấn Space hoặc chạm để chơi lại</div>
-
 <script>
-/* ---------- Canvas fit ---------- */
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+/* --- GAME --- */
+const cvs = document.getElementById("gameCanvas");
+const ctx = cvs.getContext("2d");
 
-function fitCanvas(){
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  // adjust bird radius relative to size if needed
-  bird.r = Math.round(Math.min(canvas.width, canvas.height) * 0.035);
+let frames = 0;
+const DEGREE = Math.PI/180;
+
+// load sprite
+const birdImg = new Image();
+birdImg.src = "https://i.ibb.co/YNV9Mqd/bird.png";
+
+const bgImg = new Image();
+bgImg.src = "https://i.ibb.co/s6vGZ6R/bg.png";
+
+const fgImg = new Image();
+fgImg.src = "https://i.ibb.co/ThKBLj8/fg.png";
+
+const pipeNorth = new Image();
+pipeNorth.src = "https://i.ibb.co/Wn1cFvy/pipe-North.png";
+
+const pipeSouth = new Image();
+pipeSouth.src = "https://i.ibb.co/b3z5vJ7/pipe-South.png";
+
+let gameState = {
+  current : 0,
+  getReady : 0,
+  game : 1,
+  over : 2
 }
-window.addEventListener('resize', fitCanvas);
 
-/* ---------- Game state ---------- */
-let score = 0;
-let baseSpeed = 3;
-let speedMultiplier = 1;
-let gravity = 0.6;
-let jumpPower = -10;
+cvs.addEventListener("click", function(evt){
+  switch(gameState.current){
+    case gameState.getReady:
+      gameState.current = gameState.game;
+      break;
+    case gameState.game:
+      bird.flap();
+      break;
+    case gameState.over:
+      pipes.reset();
+      bird.reset();
+      gameState.current = gameState.getReady;
+      break;
+  }
+});
 
-let bird = {
-  x: Math.round(window.innerWidth * 0.18),
-  y: window.innerHeight / 2,
-  r: Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.035),
-  vy: 0
+document.addEventListener("keydown", function(e){
+  if(e.code === "Space"){
+    if(gameState.current === gameState.getReady){
+      gameState.current = gameState.game;
+    } else if(gameState.current === gameState.game){
+      bird.flap();
+    } else if(gameState.current === gameState.over){
+      pipes.reset();
+      bird.reset();
+      gameState.current = gameState.getReady;
+    }
+  }
+});
+
+// bird
+const bird = {
+  x : 50,
+  y : 150,
+  w : 34,
+  h : 26,
+  radius : 12,
+  frame : 0,
+  gravity : 0.25,
+  jump : 4.6,
+  speed : 0,
+  rotation : 0,
+
+  draw : function(){
+    ctx.drawImage(birdImg, this.x, this.y);
+  },
+
+  flap : function(){
+    this.speed = -this.jump;
+  },
+
+  update: function(){
+    if(gameState.current === gameState.getReady){
+      this.y = 150;
+      this.rotation = 0 * DEGREE;
+    } else {
+      this.speed += this.gravity;
+      this.y += this.speed * speedHackVal;
+      if(this.y + this.h/2 >= cvs.height - fg.h){
+        this.y = cvs.height - fg.h - this.h/2;
+        if(gameState.current === gameState.game){
+          gameState.current = gameState.over;
+        }
+      }
+      if(this.speed >= this.jump){
+        this.rotation = 90 * DEGREE;
+      } else {
+        this.rotation = -25 * DEGREE;
+      }
+    }
+  },
+
+  reset: function(){
+    this.speed = 0;
+    this.y = 150;
+  }
 };
 
-let pipes = [];
-let spawnInterval = 110;
-let frame = 0;
-let gameOver = false;
+// foreground
+const fg = {
+  x : 0,
+  y : cvs.height - 112,
+  w : 224,
+  h : 112,
+  dx : 2,
 
-/* make sure canvas size updated now */
-fitCanvas();
+  draw : function(){
+    ctx.drawImage(fgImg, this.x, this.y);
+    ctx.drawImage(fgImg, this.x + this.w, this.y);
+  },
 
-/* ---------- Gameplay functions ---------- */
-function spawnPipe(){
-  const gapH = Math.round(Math.max(120, canvas.height * 0.22));
-  const topH = Math.round(Math.random() * (canvas.height - gapH - 160) + 60);
-  pipes.push({
-    x: canvas.width + 40,
-    w: Math.round(Math.min(90, canvas.width * 0.08)),
-    top: topH,
-    bottom: topH + gapH,
-    passed: false
-  });
-}
-
-function resetGame(){
-  pipes = [];
-  frame = 0;
-  score = 0;
-  document.getElementById('hudScore').textContent = 'Score: 0';
-  bird.y = canvas.height / 2;
-  bird.vy = 0;
-  gameOver = false;
-  document.getElementById('gameOverOverlay').style.display = 'none';
-  // keep selected speedMultiplier
-}
-
-/* update */
-function update(){
-  if (gameOver) return; // STOP world when dead
-
-  bird.vy += gravity;
-  bird.y += bird.vy;
-
-  if (bird.y + bird.r > canvas.height) {
-    bird.y = canvas.height - bird.r;
-    handleDeath();
-  }
-  if (bird.y - bird.r < 0) {
-    bird.y = bird.r;
-    bird.vy = 0;
-  }
-
-  if (frame % spawnInterval === 0) spawnPipe();
-
-  const curSpeed = baseSpeed * speedMultiplier;
-
-  for (let i = pipes.length - 1; i >= 0; i--) {
-    let p = pipes[i];
-    p.x -= curSpeed;
-
-    if (!p.passed && p.x + p.w < bird.x - bird.r) {
-      p.passed = true;
-      score++;
-      document.getElementById('hudScore').textContent = 'Score: ' + score;
+  update : function(){
+    if(gameState.current === gameState.game){
+      this.x = (this.x - this.dx) % (this.w);
     }
-
-    if (rectCircleColliding(p.x, 0, p.w, p.top, bird.x, bird.y, bird.r) ||
-        rectCircleColliding(p.x, p.bottom, p.w, canvas.height - p.bottom, bird.x, bird.y, bird.r)) {
-      handleDeath();
-    }
-
-    if (p.x + p.w < -50) pipes.splice(i,1);
   }
+};
 
-  frame++;
-}
+// pipes
+const pipes = {
+  position : [],
+  w : 52,
+  h : 400,
+  gap : 100,
+  dx : 2,
 
-/* draw */
+  draw : function(){
+    for(let i = 0; i < this.position.length; i++){
+      let p = this.position[i];
+      let topYPos = p.y;
+      ctx.drawImage(pipeNorth, p.x, topYPos);
+      ctx.drawImage(pipeSouth, p.x, topYPos + this.h + this.gap);
+    }
+  },
+
+  update : function(){
+    if(gameState.current !== gameState.game) return;
+    if(frames % 100 === 0){
+      this.position.push({
+        x : cvs.width,
+        y : -Math.floor(Math.random()*200) - 50
+      });
+    }
+    for(let i = 0; i < this.position.length; i++){
+      let p = this.position[i];
+      p.x -= this.dx * speedHackVal;
+      if(p.x + this.w <= 0){
+        this.position.shift();
+      }
+      // collision
+      if(
+        bird.x + bird.w/2 > p.x && bird.x - bird.w/2 < p.x + this.w &&
+        (bird.y - bird.h/2 < p.y + this.h ||
+        bird.y + bird.h/2 > p.y + this.h + this.gap)
+      ){
+        gameState.current = gameState.over;
+      }
+    }
+  },
+
+  reset : function(){
+    this.position = [];
+  }
+};
+
+// draw
 function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "#70c5ce";
+  ctx.fillRect(0,0,cvs.width,cvs.height);
 
-  // pipes
-  ctx.fillStyle = '#228B22';
-  for (let p of pipes){
-    ctx.fillRect(p.x, 0, p.w, p.top);
-    ctx.fillRect(p.x, p.bottom, p.w, canvas.height - p.bottom);
-  }
-
-  // bird
-  ctx.save();
-  ctx.translate(bird.x, bird.y);
-  ctx.beginPath();
-  ctx.fillStyle = '#FFD23F';
-  ctx.arc(0,0,bird.r,0,Math.PI*2);
-  ctx.fill();
-  // eye
-  ctx.fillStyle = '#000';
-  ctx.beginPath();
-  ctx.arc(bird.r*0.3, -bird.r*0.15, Math.max(2, bird.r*0.18), 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
+  pipes.draw();
+  fg.draw();
+  bird.draw();
 }
 
-/* main loop */
+// update
+function update(){
+  bird.update();
+  fg.update();
+  pipes.update();
+}
+
+// loop
 function loop(){
   update();
   draw();
+  frames++;
   requestAnimationFrame(loop);
 }
+
 loop();
 
-/* collision helper */
-function rectCircleColliding(rx, ry, rw, rh, cx, cy, r) {
-  let closestX = clamp(cx, rx, rx + rw);
-  let closestY = clamp(cy, ry, ry + rh);
-  let dx = cx - closestX;
-  let dy = cy - closestY;
-  return (dx*dx + dy*dy) <= r*r;
-}
-function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
-
-/* death handler - stops the world */
-function handleDeath(){
-  if (!gameOver) {
-    gameOver = true;
-    document.getElementById('gameOverOverlay').style.display = 'flex';
-  }
-}
-
-/* input: flap / restart when dead */
-window.addEventListener('keydown', function(e){
-  if (e.code === 'Space') {
-    if (gameOver) { resetGame(); return; }
-    bird.vy = jumpPower;
-  }
-});
-canvas.addEventListener('pointerdown', function(e){
-  if (gameOver) { resetGame(); return; }
-  bird.vy = jumpPower;
+/* --- HACK MENU LOGIC --- */
+let speedHackVal = 1;
+document.getElementById("speedHack").addEventListener("change", function(){
+  speedHackVal = parseInt(this.value);
 });
 
-/* ---------- Menu + controls (fixed) ---------- */
-const toggleBtn = document.getElementById('toggleBtn');
-const menuWrap = document.querySelector('.menu-wrap');
-const hackMenu = document.getElementById('hackMenu');
-const closeMenuBtn = document.getElementById('closeMenu');
-const gameOverOverlay = document.getElementById('gameOverOverlay');
+const toggleBtn = document.getElementById("toggleBtn");
+const menuWrap = document.getElementById("menuWrap");
 
-/* show / hide menu - also toggle wrapper display so rainbow border only visible when open */
-function openMenu(){
-  menuWrap.style.display = 'block';
-  hackMenu.style.display = 'block';
-  menuWrap.setAttribute('aria-hidden','false');
-  toggleBtn.style.display = 'none';
-}
-function closeMenu(){
-  hackMenu.style.display = 'none';
-  menuWrap.style.display = 'none';
-  menuWrap.setAttribute('aria-hidden','true');
-  toggleBtn.style.display = 'block';
-}
-closeMenuBtn.addEventListener('click', closeMenu);
-
-/* speed buttons */
-document.getElementById('speed1').addEventListener('click', function(){ setSpeed(1,this); });
-document.getElementById('speed2').addEventListener('click', function(){ setSpeed(2,this); });
-document.getElementById('speed3').addEventListener('click', function(){ setSpeed(3,this); });
-
-function setSpeed(n, btnEl){
-  speedMultiplier = n;
-  document.querySelectorAll('.menu-row .btn').forEach(b=>{ b.classList.remove('active'); });
-  if (btnEl) btnEl.classList.add('active');
-}
-
-/* draggable-toggle behavior with click-to-open when not dragged */
-let isPointerDownBtn = false;
-let btnMoved = false;
-let btnOffset = {x:0,y:0};
-
-toggleBtn.addEventListener('pointerdown', function(e){
-  isPointerDownBtn = true;
-  btnMoved = false;
-  toggleBtn.setPointerCapture(e.pointerId);
-  btnOffset.x = e.clientX - toggleBtn.offsetLeft;
-  btnOffset.y = e.clientY - toggleBtn.offsetTop;
-  toggleBtn.style.cursor = 'grabbing';
+toggleBtn.addEventListener("click", () => {
+  menuWrap.style.display = menuWrap.style.display === "none" ? "block" : "none";
 });
-
-window.addEventListener('pointermove', function(e){
-  if (!isPointerDownBtn) return;
-  // move and detect if actually dragged
-  let nx = e.clientX - btnOffset.x;
-  let ny = e.clientY - btnOffset.y;
-  if (Math.abs(nx - toggleBtn.offsetLeft) > 4 || Math.abs(ny - toggleBtn.offsetTop) > 4) btnMoved = true;
-  nx = clamp(nx, 6, window.innerWidth - toggleBtn.offsetWidth - 6);
-  ny = clamp(ny, 6, window.innerHeight - toggleBtn.offsetHeight - 6);
-  toggleBtn.style.left = nx + 'px';
-  toggleBtn.style.top = ny + 'px';
-});
-
-toggleBtn.addEventListener('pointerup', function(e){
-  toggleBtn.releasePointerCapture && toggleBtn.releasePointerCapture(e.pointerId);
-  toggleBtn.style.cursor = 'grab';
-  isPointerDownBtn = false;
-  if (!btnMoved) {
-    // treat as tap/click -> open menu
-    openMenu();
-  }
-});
-
-/* meme fallback */
-const memeImg = document.getElementById('memeImg');
-memeImg.onerror = function(){
-  this.style.display = 'none';
-  const btn = document.getElementById('toggleBtn');
-  btn.textContent = '😺';
-  btn.style.fontSize = '30px';
-  btn.style.display = 'flex';
-  btn.style.alignItems = 'center';
-  btn.style.justifyContent = 'center';
-};
-
-/* When overlay shown (Game Over), allow click on overlay to reset as well (fix 'đơ') */
-gameOverOverlay.addEventListener('click', function(){
-  resetGame();
-});
-
-/* Prevent double-tap zoom */
-let lastTouch = 0;
-document.addEventListener('touchend', (e) => {
-  let now = Date.now();
-  if (now - lastTouch <= 300) e.preventDefault();
-  lastTouch = now;
-}, {passive:false});
-
 </script>
+
 </body>
   </html>
